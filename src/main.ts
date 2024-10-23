@@ -19,13 +19,11 @@ ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 //Setting up the drawing state
 let isDrawing = false;
-let x = 0;
-let y = 0;
 
 type Point = [number, number];
 type Line = Point[];
 let lines: Line[] = [];
-let currentLine: Line = [];
+let currentLine: Line;
 
 const drawingChangedEvent = new Event('drawing-changed');
 
@@ -40,9 +38,9 @@ function reDraw(){
     ctx.lineWidth = 2;
 
     //Iterating through the array and redrawing all the lines
-    lines.forEach(line => {
+    for (const line of lines) {
         if (line.length < 2)
-            return;
+            continue;
 
         ctx.beginPath();
         ctx.moveTo(line[0][0], line[0][1]);
@@ -53,7 +51,7 @@ function reDraw(){
 
         ctx.stroke();
         ctx.closePath();
-    });
+    }
 }
 
 //Event listener for any drawing changes
@@ -62,17 +60,14 @@ canvas.addEventListener('drawing-changed', reDraw);
 //Mouse event handlers
 canvas.addEventListener("mousedown", (e) => {
     isDrawing = true;
-    x = e.offsetX;
-    y = e.offsetY;
-    currentLine = [[x, y]];
+    currentLine = [[e.offsetX, e.offsetY]];
     lines.push(currentLine);
+    canvas.dispatchEvent(drawingChangedEvent);
 });
 
 canvas.addEventListener("mousemove", (e) => {
-    if (isDrawing) {
-        x = e.offsetX;
-        y = e.offsetY;
-        currentLine.push([x, y]);
+    if (isDrawing && currentLine) {
+        currentLine.push([e.offsetX, e.offsetY]);
 
         //Event to trigger redraw
         canvas.dispatchEvent(drawingChangedEvent);
@@ -80,15 +75,14 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 window.addEventListener("mouseup", (e) => {
-    if (isDrawing){
-        isDrawing = false;
-        currentLine = [];
-    }
+    isDrawing = false;
+    currentLine = [];
+
 });
 
 //Clear button
 const clearButton = document.querySelector("#clearButton")!;
-
 clearButton.addEventListener("click", () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    lines = [];
+    canvas.dispatchEvent(drawingChangedEvent);
 });
