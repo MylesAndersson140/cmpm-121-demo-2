@@ -22,41 +22,71 @@ let isDrawing = false;
 let x = 0;
 let y = 0;
 
+type Point = [number, number];
+type Line = Point[];
+let lines: Line[] = [];
+let currentLine: Line = [];
+
+const drawingChangedEvent = new Event('drawing-changed');
+
+//Function to handle drawing
+function reDraw(){
+    //Clearing the canvas
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    //Line style
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+
+    //Iterating through the array and redrawing all the lines
+    lines.forEach(line => {
+        if (line.length < 2)
+            return;
+
+        ctx.beginPath();
+        ctx.moveTo(line[0][0], line[0][1]);
+
+        for (let i = 1; i < line.length; i++){
+            ctx.lineTo(line[i][0], line[i][1]);
+        }
+
+        ctx.stroke();
+        ctx.closePath();
+    });
+}
+
+//Event listener for any drawing changes
+canvas.addEventListener('drawing-changed', reDraw);
+
+//Mouse event handlers
 canvas.addEventListener("mousedown", (e) => {
+    isDrawing = true;
     x = e.offsetX;
     y = e.offsetY;
-    isDrawing = true;
+    currentLine = [[x, y]];
+    lines.push(currentLine);
 });
 
 canvas.addEventListener("mousemove", (e) => {
     if (isDrawing) {
-        drawLine(ctx, x, y, e.offsetX, e.offsetY);
         x = e.offsetX;
         y = e.offsetY;
+        currentLine.push([x, y]);
+
+        //Event to trigger redraw
+        canvas.dispatchEvent(drawingChangedEvent);
     }
 });
 
 window.addEventListener("mouseup", (e) => {
     if (isDrawing){
-        drawLine(ctx, x, y, e.offsetX, e.offsetY);
-        x = 0;
-        y = 0;
         isDrawing = false;
+        currentLine = [];
     }
 });
 
-//Line aspects
-ctx.strokeStyle = "#000000";
-ctx.lineWidth = 2;
-
-function drawLine(ctx, x1, y1, x2, y2){
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-    ctx.closePath();
-}
-
+//Clear button
 const clearButton = document.querySelector("#clearButton")!;
 
 clearButton.addEventListener("click", () => {
