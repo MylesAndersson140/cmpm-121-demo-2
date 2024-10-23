@@ -8,6 +8,8 @@ app.innerHTML = `
     <h1>${APP_NAME}</h1>
     <canvas id="canvas" width="256" height="256"></canvas>
     <button id="clearButton">Clear</button>
+    <button id="undoButton">Undo</button>
+    <button id="redoButton">Redo</button>
 `;
 
 //Drew inspiration from line 4, as code was showing warnings previously.
@@ -23,6 +25,7 @@ let isDrawing = false;
 type Point = [number, number];
 type Line = Point[];
 let lines: Line[] = [];
+let redoStack: Line[] = [];
 let currentLine: Line;
 
 const drawingChangedEvent = new Event('drawing-changed');
@@ -79,10 +82,31 @@ window.addEventListener("mouseup", (e) => {
     currentLine = [];
 
 });
+//Undo button
+const undoButton = document.querySelector("#undoButton")!;
+undoButton.addEventListener("click", () => {
+    if (lines.length > 0){
+        //Grabbing the most recent drawn line
+        const linePopped = lines.pop()!;
+        redoStack.push(linePopped);
+        canvas.dispatchEvent(drawingChangedEvent);
+    }
+});
 
+//Redo button
+const redoButton = document.querySelector("#redoButton")!;
+redoButton.addEventListener("click", () => {
+    if (redoStack.length > 0) {
+        //Grabbing the most recent undone line
+        const redoLine = redoStack.pop()!;
+        lines.push(redoLine);
+        canvas.dispatchEvent(drawingChangedEvent);
+    }
+})
 //Clear button
 const clearButton = document.querySelector("#clearButton")!;
 clearButton.addEventListener("click", () => {
     lines = [];
+    redoStack = [];
     canvas.dispatchEvent(drawingChangedEvent);
 });
