@@ -6,11 +6,19 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
 app.innerHTML = `
     <h1>${APP_NAME}</h1>
+    <div class="tools">
+        <button id="thinMarker" class="selectedTool">Thin Marker</button>
+        <button id="thickMarker">Thick Marker</button>
+    <div>
     <canvas id="canvas" width="256" height="256"></canvas>
-    <button id="clearButton">Clear</button>
-    <button id="undoButton">Undo</button>
-    <button id="redoButton">Redo</button>
+    <div class="controls">
+        <button id="clearButton">Clear</button>
+        <button id="undoButton">Undo</button>
+        <button id="redoButton">Redo</button>
 `;
+
+const THIN_MARKER = 2;
+const THICK_MARKER = 6;
 
 //Drew inspiration from line 4, as code was showing warnings previously.
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
@@ -21,9 +29,11 @@ ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 class MarkerLine {
     points: Array<[number,number]> = [];
+    marker: number;
 
-    constructor(initalX: number, initalY: number) {
+    constructor(initalX: number, initalY: number, marker: number) {
         this.points.push([initalX, initalY]);
+        this.marker = marker;
     }
 
     drag(x: number, y: number) {
@@ -33,9 +43,10 @@ class MarkerLine {
     display(ctx: CanvasRenderingContext2D) {
         if (this.points.length < 2)
             return;
+
         ctx.beginPath();
         ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = this.marker;
 
         ctx.moveTo(this.points[0][0], this.points[0][1]);
 
@@ -53,11 +64,7 @@ let isDrawing = false;
 let currentLine: MarkerLine | null = null;
 let lines: MarkerLine[] = [];
 let redoStack: MarkerLine[] = [];
-//type Point = [number, number];
-//type Line = Point[];
-//let lines: Line[] = [];
-//let redoStack: Line[] = [];
-//let currentLine: Line;
+let currMarker = THIN_MARKER;
 
 const drawingChangedEvent = new Event('drawing-changed');
 
@@ -67,15 +74,23 @@ function reDraw(){
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    //Line style
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
-
     //Iterating through the array and redrawing all the lines
     for (const line of lines){
         line.display(ctx);
     }
 }
+
+//Marker selection handlers
+const thinMarkerButton = document.querySelector("#thinMarker")!;
+const thickMarkerButton = document.querySelector("#thickMarker")!;
+
+//Function that communicates marker thickness to the MarkerLine class
+function markerSelection(marker: number) {
+    currMarker = marker;
+}
+
+thinMarkerButton.addEventListener("click", () => markerSelection(THIN_MARKER));
+thickMarkerButton.addEventListener("click", () => markerSelection(THICK_MARKER));
 
 //Event listener for any drawing changes
 canvas.addEventListener('drawing-changed', reDraw);
@@ -83,7 +98,7 @@ canvas.addEventListener('drawing-changed', reDraw);
 //Mouse event handlers
 canvas.addEventListener("mousedown", (e) => {
     isDrawing = true;
-    currentLine = new MarkerLine(e.offsetX, e.offsetY);
+    currentLine = new MarkerLine(e.offsetX, e.offsetY, currMarker);
     lines.push(currentLine);
     canvas.dispatchEvent(drawingChangedEvent);
 });
