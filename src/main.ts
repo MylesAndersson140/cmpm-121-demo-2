@@ -27,6 +27,19 @@ const ctx = canvas.getContext("2d")!;
 ctx.fillStyle = "white";
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+class MarkerPreview {
+    constructor(private x: number, private y: number, private marker: number){}
+
+    display(ctx: CanvasRenderingContext2D) {
+        ctx.beginPath();
+        //Color, size, and intensity of the preview
+        ctx.arc(this.x, this.y, this.marker / 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,1)";
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
 class MarkerLine {
     points: Array<[number,number]> = [];
     marker: number;
@@ -65,8 +78,10 @@ let currentLine: MarkerLine | null = null;
 let lines: MarkerLine[] = [];
 let redoStack: MarkerLine[] = [];
 let currMarker = THIN_MARKER;
+let currPreview: MarkerPreview | null = null;
 
 const drawingChangedEvent = new Event('drawing-changed');
+const toolMovedEvent = new Event('tool-moved');
 
 //Function to handle drawing
 function reDraw(){
@@ -78,13 +93,16 @@ function reDraw(){
     for (const line of lines){
         line.display(ctx);
     }
+
+    if (!isDrawing && currPreview) {
+        currPreview.display(ctx);
+    }
 }
 
 //Marker selection handlers
 const thinMarkerButton = document.querySelector("#thinMarker")!;
 const thickMarkerButton = document.querySelector("#thickMarker")!;
 
-//Function that communicates marker thickness to the MarkerLine class
 function markerSelection(marker: number) {
     currMarker = marker;
 }
@@ -92,10 +110,16 @@ function markerSelection(marker: number) {
 thinMarkerButton.addEventListener("click", () => markerSelection(THIN_MARKER));
 thickMarkerButton.addEventListener("click", () => markerSelection(THICK_MARKER));
 
-//Event listener for any drawing changes
+//Event listener for any changes
 canvas.addEventListener('drawing-changed', reDraw);
+canvas.addEventListener('tool-moved', reDraw);
 
 //Mouse event handlers
+canvas.addEventListener("mouseenter", (e) => {
+    currPreview = new MarkerPreview(e.offsetX, e.offsetY, currMarker);
+    canvas.dispatchEvent(toolMovedEvent);
+});
+
 canvas.addEventListener("mousedown", (e) => {
     isDrawing = true;
     currentLine = new MarkerLine(e.offsetX, e.offsetY, currMarker);
@@ -109,6 +133,9 @@ canvas.addEventListener("mousemove", (e) => {
 
         //Event to trigger redraw
         canvas.dispatchEvent(drawingChangedEvent);
+    } else {
+        currPreview = new MarkerPreview(e.offsetX, e.offsetY, currMarker);
+        canvas.dispatchEvent(toolMovedEvent);
     }
 });
 
@@ -137,7 +164,8 @@ redoButton.addEventListener("click", () => {
         lines.push(redoLine);
         canvas.dispatchEvent(drawingChangedEvent);
     }
-})
+});
+
 //Clear button
 const clearButton = document.querySelector("#clearButton")!;
 clearButton.addEventListener("click", () => {
