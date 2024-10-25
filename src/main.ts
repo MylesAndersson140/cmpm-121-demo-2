@@ -19,14 +19,45 @@ const ctx = canvas.getContext("2d")!;
 ctx.fillStyle = "white";
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+class MarkerLine {
+    points: Array<[number,number]> = [];
+
+    constructor(initalX: number, initalY: number) {
+        this.points.push([initalX, initalY]);
+    }
+
+    drag(x: number, y: number) {
+        this.points.push([x, y]);
+    }
+
+    display(ctx: CanvasRenderingContext2D) {
+        if (this.points.length < 2)
+            return;
+        ctx.beginPath();
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+
+        ctx.moveTo(this.points[0][0], this.points[0][1]);
+
+        for (let i = 1; i < this.points.length; i++) {
+            ctx.lineTo(this.points[i][0], this.points[i][1]);
+        }
+
+        ctx.stroke();
+        ctx.closePath();
+    }
+}
+
 //Setting up the drawing state
 let isDrawing = false;
-
-type Point = [number, number];
-type Line = Point[];
-let lines: Line[] = [];
-let redoStack: Line[] = [];
-let currentLine: Line;
+let currentLine: MarkerLine | null = null;
+let lines: MarkerLine[] = [];
+let redoStack: MarkerLine[] = [];
+//type Point = [number, number];
+//type Line = Point[];
+//let lines: Line[] = [];
+//let redoStack: Line[] = [];
+//let currentLine: Line;
 
 const drawingChangedEvent = new Event('drawing-changed');
 
@@ -41,19 +72,8 @@ function reDraw(){
     ctx.lineWidth = 2;
 
     //Iterating through the array and redrawing all the lines
-    for (const line of lines) {
-        if (line.length < 2)
-            continue;
-
-        ctx.beginPath();
-        ctx.moveTo(line[0][0], line[0][1]);
-
-        for (let i = 1; i < line.length; i++){
-            ctx.lineTo(line[i][0], line[i][1]);
-        }
-
-        ctx.stroke();
-        ctx.closePath();
+    for (const line of lines){
+        line.display(ctx);
     }
 }
 
@@ -63,23 +83,23 @@ canvas.addEventListener('drawing-changed', reDraw);
 //Mouse event handlers
 canvas.addEventListener("mousedown", (e) => {
     isDrawing = true;
-    currentLine = [[e.offsetX, e.offsetY]];
+    currentLine = new MarkerLine(e.offsetX, e.offsetY);
     lines.push(currentLine);
     canvas.dispatchEvent(drawingChangedEvent);
 });
 
 canvas.addEventListener("mousemove", (e) => {
     if (isDrawing && currentLine) {
-        currentLine.push([e.offsetX, e.offsetY]);
+        currentLine.drag(e.offsetX, e.offsetY);
 
         //Event to trigger redraw
         canvas.dispatchEvent(drawingChangedEvent);
     }
 });
 
-window.addEventListener("mouseup", (e) => {
+globalThis.addEventListener("mouseup", (_e) => {
     isDrawing = false;
-    currentLine = [];
+    currentLine = null;
 
 });
 //Undo button
