@@ -11,15 +11,18 @@ app.innerHTML = `
         <button id="thickMarker">Thick Marker</button>
     <div>
     <div class="sticker-tools">
-        <button id="fox">🦊</button>
-        <button id="elephant">🐘</button>
-        <button id="butterfly">🦋</button>
-        <button id="giraffe">🦒</button>
+        <button id="fox" class="sticker-btn">🦊</button>
+        <button id="elephant" class="sticker-btn">🐘</button>
+        <button id="butterfly" class="sticker-btn">🦋</button>
+        <button id="giraffe" class="sticker-btn">🦒</button>
+        <button id="addCustomSticker">+ Add Custom</button>
+    <div>
     <canvas id="canvas" width="256" height="256"></canvas>
     <div class="controls">
         <button id="clearButton">Clear</button>
         <button id="undoButton">Undo</button>
         <button id="redoButton">Redo</button>
+    <div>
 `;
 
 const THIN_MARKER = 2;
@@ -151,18 +154,39 @@ function reDraw(){
 //Marker selection handlers
 const thinMarkerButton = document.querySelector("#thinMarker")!;
 const thickMarkerButton = document.querySelector("#thickMarker")!;
-const stickerButtons = document.querySelectorAll(".sticker-tools button");
+const stickerButtons = document.querySelectorAll(".sticker-btn");
+//Done in this manner such that insertBefore functions correctly
+const stickerTools = document.querySelector<HTMLDivElement>(".sticker-tools")!;
 
 function markerSelection(marker: number) {
     currTool = { type: 'marker', marker };
     document.querySelectorAll('.selectedTool').forEach(el => el.classList.remove('selectedTool'));
     (marker === THIN_MARKER ? thinMarkerButton : thickMarkerButton).classList.add('selectedTool');
-
 }
 
 function stickerSelection(sticker: string){
     currTool = { type: 'sticker', sticker };
     document.querySelectorAll('.selectedTool').forEach(el => el.classList.remove('selectedTool'));
+}
+
+function createCustomSticker(){
+    const customSticker = prompt("Enter custom sticker:", "*")
+    if (customSticker){
+        const newButton = document.createElement("button");
+        newButton.textContent = customSticker;
+        newButton.className = "sticker-btn"
+
+        const addButton = document.querySelector("#addCustomSticker")!;
+        stickerTools.insertBefore(newButton, addButton);
+
+        newButton.addEventListener("click", () => {
+            stickerSelection(customSticker);
+            canvas.dispatchEvent(toolMovedEvent);
+        });
+
+        stickerSelection(customSticker);
+        canvas.dispatchEvent(toolMovedEvent);
+    }
 }
 
 thinMarkerButton.addEventListener("click", () => markerSelection(THIN_MARKER));
@@ -173,6 +197,10 @@ stickerButtons.forEach(btn => {
         canvas.dispatchEvent(toolMovedEvent);
     });
 });
+
+//Custom stick event handler
+const addCustomStickerButton = document.querySelector("#addCustomSticker")!;
+addCustomStickerButton.addEventListener("click", createCustomSticker);
 
 //Event listener for any changes
 canvas.addEventListener('drawing-changed', reDraw);
