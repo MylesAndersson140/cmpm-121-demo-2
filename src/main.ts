@@ -42,6 +42,7 @@ type Tool = {
     type: 'marker' | 'sticker';
     marker?: number;
     sticker?: string;
+    color?: string;
 };
 
 //New interface for drawing
@@ -51,38 +52,54 @@ interface DrawCommand {
 }
 
 class MarkerPreview implements DrawCommand {
-    constructor(private x: number, private y: number, private marker: number){}
-
+    constructor(
+        private x: number, 
+        private y: number, 
+        private marker: number,
+        private color: string
+    ){}
+    
     display(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
         //Color, size, and intensity of the marker preview
         ctx.arc(this.x, this.y, this.marker / 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,1)";
+        ctx.fillStyle = this.color;
         ctx.fill();
         ctx.closePath();
     }
 }
 
 class StickerPreview implements DrawCommand {
-    constructor(private x: number, private y: number, private sticker: string) {}
+    private rotation: number;
+
+    constructor(private x: number, private y: number, private sticker: string) {
+    this.rotation = 0;
+    }
 
     display(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
         //Color, size, and intensity of the sticker preview
         ctx.font = `${STICKER}px serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-        ctx.fillText(this.sticker, this.x, this.y);
+        ctx.fillText(this.sticker, 0, 0);
+        ctx.restore();
     }
 }
 
 class MarkerLine implements DrawCommand {
     points: Array<[number,number]> = [];
-    //marker: number;
 
-    constructor(initalX: number, initalY: number, private marker: number) {
+    constructor(
+        initalX: number,
+        initalY: number,
+        private marker: number,
+        private color: string
+    ) {
         this.points.push([initalX, initalY]);
-        //this.marker = marker;
     }
 
     drag(x: number, y: number) {
@@ -94,7 +111,7 @@ class MarkerLine implements DrawCommand {
             return;
 
         ctx.beginPath();
-        ctx.strokeStyle = "#000000";
+        ctx.strokeStyle = this.color;
         ctx.lineWidth = this.marker;
 
         ctx.moveTo(this.points[0][0], this.points[0][1]);
@@ -110,7 +127,11 @@ class MarkerLine implements DrawCommand {
 
 //Class that assists us in placing the sticker on the canvas
 class Sticker implements DrawCommand {
-    constructor(private x: number, private y: number, private sticker: string) {}
+    private rotation: number;
+
+    constructor(private x: number, private y: number, private sticker: string) {
+        this.rotation = (Math.random() * 30 - 15) * Math.PI / 90;
+    }
 
     drag(x: number, y: number) {
         this.x = x;
@@ -118,11 +139,17 @@ class Sticker implements DrawCommand {
     }
 
     display(ctx: CanvasRenderingContext2D){
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+
         ctx.font = `${STICKER}px serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = "#000000";
-        ctx.fillText(this.sticker, this.x, this.y);
+        ctx.fillText(this.sticker, 0, 0);
+
+        ctx.restore();
       }
 }
 
@@ -132,11 +159,18 @@ let currCommand: DrawCommand | null = null;
 let currPreview: DrawCommand;
 let lines: DrawCommand[] = [];
 let redoStack: DrawCommand[] = [];
-let currTool: Tool = { type: 'marker', marker: THIN_MARKER };
+let currTool: Tool = {type: 'marker', marker: THIN_MARKER, color: '#000000'};
 
 const drawingChangedEvent = new Event('drawing-changed');
 const toolMovedEvent = new Event('tool-moved');
 
+
+function getRandomColor(): string {
+    const hue = Math.random()* 300;
+    const saturation = 30 + Math.random() * 20;
+    const lightness = 30 + Math.random() * 10;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
 //Function to handle drawing
 function reDraw(){
     //Clearing the canvas
@@ -178,16 +212,21 @@ function exportCanvas() {
 }
 
 //Marker selection handlers
-const thinMarkerButton = document.querySelector("#thinMarker")!;
-const thickMarkerButton = document.querySelector("#thickMarker")!;
+const thinMarkerButton = document.querySelector<HTMLButtonElement>("#thinMarker")!;
+const thickMarkerButton = document.querySelector<HTMLButtonElement>("#thickMarker")!;
 const stickerButtons = document.querySelectorAll(".sticker-btn");
 //Done in this manner such that insertBefore functions correctly
 const stickerTools = document.querySelector<HTMLDivElement>(".sticker-tools")!;
 
 function markerSelection(marker: number) {
-    currTool = { type: 'marker', marker };
+    const color = getRandomColor();
+    currTool = {type: 'marker', marker, color};
     document.querySelectorAll('.selectedTool').forEach(el => el.classList.remove('selectedTool'));
-    (marker === THIN_MARKER ? thinMarkerButton : thickMarkerButton).classList.add('selectedTool');
+    //(marker === THIN_MARKER ? thinMarkerButton : thickMarkerButton).classList.add('selectedTool');
+    const button = (marker === THIN_MARKER ? thinMarkerButton : thickMarkerButton);
+    button.classList.add('selectedTool');
+    button.style.backgroundColor = color;
+    button.style.color = 'white';
 }
 
 function stickerSelection(sticker: string){
@@ -244,7 +283,7 @@ canvas.addEventListener("mouseenter", (e) => {
 canvas.addEventListener("mousedown", (e) => {
     isDrawing = true;
     if (currTool.type === 'marker') {
-        currCommand = new MarkerLine(e.offsetX, e.offsetY, currTool.marker!);
+        currCommand = new MarkerLine(e.offsetX, e.offsetY, currTool.marker!, currTool.color!);
     } else {
         currCommand = new Sticker(e.offsetX, e.offsetY, currTool.sticker!);
     }
@@ -273,7 +312,7 @@ globalThis.addEventListener("mouseup", (_e) => {
 //Helper function that changes the preview type
 function updatePreview(x: number, y: number){
     if (currTool.type === 'marker') {
-        currPreview = new MarkerPreview(x, y, currTool.marker!);
+        currPreview = new MarkerPreview(x, y, currTool.marker!, currTool.color!);
     } else {
         currPreview = new StickerPreview(x, y, currTool.sticker!);
     }
