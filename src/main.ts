@@ -1,6 +1,6 @@
 import "./style.css";
 
-const APP_NAME = "A Nifty Drawing!";
+const APP_NAME = "A Nifty Safari!";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 document.title = APP_NAME;
@@ -11,9 +11,9 @@ app.innerHTML = `
         <button id="thickMarker">Thick Marker</button>
     <div>
     <div class="sticker-tools">
-        <button id="fox" class="sticker-btn">🦊</button>
+        <button id="fox" class="sticker-btn">🐯</button>
         <button id="elephant" class="sticker-btn">🐘</button>
-        <button id="butterfly" class="sticker-btn">🦋</button>
+        <button id="butterfly" class="sticker-btn">🦁</button>
         <button id="giraffe" class="sticker-btn">🦒</button>
         <button id="addCustomSticker">+ Add Custom</button>
     <div>
@@ -26,9 +26,9 @@ app.innerHTML = `
     <div>
 `;
 
-const THIN_MARKER = 2;
-const THICK_MARKER = 6;
-const STICKER = 25;
+const THIN_MARKER = 3;
+const THICK_MARKER = 7;
+const STICKER = 30;
 const EXPORT_SCALE = 4; //4x larger
 
 //Drew inspiration from line 4, as code was showing warnings previously.
