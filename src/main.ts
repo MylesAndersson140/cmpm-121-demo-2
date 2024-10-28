@@ -22,12 +22,14 @@ app.innerHTML = `
         <button id="clearButton">Clear</button>
         <button id="undoButton">Undo</button>
         <button id="redoButton">Redo</button>
+        <button id="exportButton">Export</button>
     <div>
 `;
 
 const THIN_MARKER = 2;
 const THICK_MARKER = 6;
 const STICKER = 25;
+const EXPORT_SCALE = 4; //4x larger
 
 //Drew inspiration from line 4, as code was showing warnings previously.
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
@@ -151,6 +153,30 @@ function reDraw(){
     }
 }
 
+function exportCanvas() {
+    //Temp canvas
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvas.width * EXPORT_SCALE;
+    exportCanvas.height = canvas.height * EXPORT_SCALE;
+    const exportCtx = exportCanvas.getContext('2d')!;
+    
+    //White background
+    exportCtx.fillStyle = "white";
+    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    exportCtx.scale(EXPORT_SCALE, EXPORT_SCALE);
+
+    //Redrawing
+    for (const command of lines) {
+        command.display(exportCtx);
+    }
+
+    const anchor = document.createElement("a");
+    anchor.href = exportCanvas.toDataURL("image/png");
+    anchor.download = "sketchpad.png";
+    anchor.click();
+}
+
 //Marker selection handlers
 const thinMarkerButton = document.querySelector("#thinMarker")!;
 const thickMarkerButton = document.querySelector("#thickMarker")!;
@@ -201,6 +227,10 @@ stickerButtons.forEach(btn => {
 //Custom stick event handler
 const addCustomStickerButton = document.querySelector("#addCustomSticker")!;
 addCustomStickerButton.addEventListener("click", createCustomSticker);
+
+//Export button event handler
+const exportButton = document.querySelector("#exportButton")!;
+exportButton.addEventListener("click", exportCanvas);
 
 //Event listener for any changes
 canvas.addEventListener('drawing-changed', reDraw);
