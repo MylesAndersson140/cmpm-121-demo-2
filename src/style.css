@@ -88,7 +88,7 @@ button:focus-visible {
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background-color: #cee397;
   }
   a:hover {
     color: #747bff;
@@ -96,4 +96,25 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.tools {
+  margin-bottom: 10px;
+}
+
+.sticker-tools {
+  margin-bottom: 10px;
+}
+
+#canvas {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+button {
+  margin-bottom: 10px;
+}
+
+button.selectedTool {
+  margin-right: 10px;
 }
