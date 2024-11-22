@@ -2,7 +2,7 @@ import "./style.css";
 
 const APP_NAME = "A Nifty Safari!";
 const app = document.querySelector<HTMLDivElement>("#app")!;
-
+// set up app and title layout
 document.title = APP_NAME;
 app.innerHTML = `
     <h1>${APP_NAME}</h1>
@@ -29,13 +29,13 @@ app.innerHTML = `
 const THIN_MARKER = 3;
 const THICK_MARKER = 7;
 const STICKER = 30;
-const EXPORT_SCALE = 4; //4x larger
+const EXPORT_SCALE = 4; // scaling factor for export
 
 //Drew inspiration from line 4, as code was showing warnings previously.
 const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
 const ctx = canvas.getContext("2d")!;
 
-ctx.fillStyle = "white";
+ctx.fillStyle = "white"; // set background to white
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 type Tool = {
@@ -79,13 +79,13 @@ class StickerPreview implements DrawCommand {
     display(ctx: CanvasRenderingContext2D) {
         ctx.save();
         ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
+        ctx.rotate(this.rotation); // rotate sticker
         //Color, size, and intensity of the sticker preview
         ctx.font = `${STICKER}px serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-        ctx.fillText(this.sticker, 0, 0);
+        ctx.fillText(this.sticker, 0, 0); // display sticker
         ctx.restore();
     }
 }
@@ -103,7 +103,7 @@ class MarkerLine implements DrawCommand {
     }
 
     drag(x: number, y: number) {
-        this.points.push([x, y]);
+        this.points.push([x, y]); // track points as the user drags
     }
 
     display(ctx: CanvasRenderingContext2D) {
@@ -135,13 +135,13 @@ class Sticker implements DrawCommand {
 
     drag(x: number, y: number) {
         this.x = x;
-        this.y = y;
+        this.y = y; // update sticker position
     }
 
     display(ctx: CanvasRenderingContext2D){
         ctx.save();
         ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
+        ctx.rotate(this.rotation); // rotation
 
         ctx.font = `${STICKER}px serif`;
         ctx.textAlign = 'center';
@@ -164,7 +164,7 @@ let currTool: Tool = {type: 'marker', marker: THIN_MARKER, color: '#000000'};
 const drawingChangedEvent = new Event('drawing-changed');
 const toolMovedEvent = new Event('tool-moved');
 
-
+// random color generator for marker tools
 function getRandomColor(): string {
     const hue = Math.random()* 300;
     const saturation = 30 + Math.random() * 20;
@@ -183,10 +183,10 @@ function reDraw(){
     }
 
     if (!isDrawing && currPreview) {
-        currPreview.display(ctx);
+        currPreview.display(ctx); // display preview
     }
 }
-
+// export as png
 function exportCanvas() {
     //Temp canvas
     const exportCanvas = document.createElement('canvas');
@@ -242,7 +242,7 @@ function createCustomSticker(){
         newButton.className = "sticker-btn"
 
         const addButton = document.querySelector("#addCustomSticker")!;
-        stickerTools.insertBefore(newButton, addButton);
+        stickerTools.insertBefore(newButton, addButton); // add custom button
 
         newButton.addEventListener("click", () => {
             stickerSelection(customSticker);
@@ -335,7 +335,7 @@ const redoButton = document.querySelector("#redoButton")!;
 redoButton.addEventListener("click", () => {
     if (redoStack.length > 0) {
         //Grabbing the most recent undone line
-        const redoLine = redoStack.pop()!;
+        const redoLine = redoStack.pop()!; // redo last command
         lines.push(redoLine);
         canvas.dispatchEvent(drawingChangedEvent);
     }
